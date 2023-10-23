@@ -26,7 +26,18 @@ namespace ScanLocalNetwork
                         if (ipAddress.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                         {
                             Console.WriteLine("IP-адрес: " + ipAddress.Address.ToString());
-                            Console.WriteLine("Шлюз по умолчанию: " + ipProps.GatewayAddresses[0].Address.ToString());
+
+                            // Проверяем, есть ли шлюз по умолчанию
+                            var defaultGateway = ipProps.GatewayAddresses.FirstOrDefault();
+                            if (defaultGateway != null)
+                            {
+                                Console.WriteLine("Шлюз по умолчанию: " + defaultGateway.Address.ToString());
+                            }
+                            else
+                            {
+                                Console.WriteLine("Шлюз по умолчанию: Не задан");
+                            }
+
                             Console.WriteLine("Маска подсети: " + ipAddress.IPv4Mask.ToString());
                         }
                     }
