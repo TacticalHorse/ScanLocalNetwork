@@ -50,28 +50,22 @@ namespace ScanLocalNetwork
                     }
                     catch (SocketException ex)
                     {
-                        // Проверяем, что это IPv4-адрес
-                        if (ipAddress.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                        {
-                            Console.WriteLine("IP-адрес: " + ipAddress.Address.ToString());
-
-                            // Проверяем, есть ли шлюз по умолчанию
-                            var defaultGateway = ipProps.GatewayAddresses.FirstOrDefault();
-                            if (defaultGateway != null)
-                            {
-                                Console.WriteLine("Шлюз по умолчанию: " + defaultGateway.Address.ToString());
-                            }
-                            else
-                            {
-                                Console.WriteLine("Шлюз по умолчанию: Не задан");
-                            }
-
-                            Console.WriteLine("Маска подсети: " + ipAddress.IPv4Mask.ToString());
-                        }
+                        name = "?";
                     }
-
-                    Console.WriteLine("=========================================");
+                    Console.WriteLine("{0} ({1}) is up: ({2} ms)", ip, name, e.Reply.RoundtripTime);
                 }
+                else
+                {
+                    Console.WriteLine("{0} is up: ({1} ms)", ip, e.Reply.RoundtripTime);
+                }
+                lock (lockObj)
+                {
+                    upCount++;
+                }
+            }
+            else if (e.Reply == null)
+            {
+                Console.WriteLine("Pinging {0} failed. (Null Reply object?)", ip);
             }
             countdown.Signal();
         }
