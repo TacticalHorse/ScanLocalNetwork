@@ -1,26 +1,54 @@
-﻿using System.Net.NetworkInformation;
+﻿using System.Diagnostics;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 namespace ScanLocalNetwork
 {
     class Program
     {
-        static void Main()
+        static CountdownEvent countdown;
+        static int upCount = 0;
+        static object lockObj = new object();
+        const bool resolveNames = true;
+
+        static void Main(string[] args)
         {
-            // Получаем все сетевые интерфейсы на компьютере
-            NetworkInterface[] interfaces = NetworkInterface.GetAllNetworkInterfaces();
-
-            foreach (var networkInterface in interfaces)
+            countdown = new CountdownEvent(1);
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            string ipBase = "10.22.4.";
+            for (int i = 1; i < 255; i++)
             {
-                // Проверяем, что интерфейс подключен и является локальной сетью
-                if (networkInterface.OperationalStatus == OperationalStatus.Up &&
-                    networkInterface.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                {
-                    Console.WriteLine("Имя интерфейса: " + networkInterface.Name);
-                    Console.WriteLine("MAC-адрес: " + networkInterface.GetPhysicalAddress().ToString());
+                string ip = ipBase + i.ToString();
 
-                    // Получаем IP-адреса интерфейса
-                    IPInterfaceProperties ipProps = networkInterface.GetIPProperties();
-                    foreach (var ipAddress in ipProps.UnicastAddresses)
+                Ping p = new Ping();
+                p.PingCompleted += new PingCompletedEventHandler(p_PingCompleted);
+                countdown.AddCount();
+                p.SendAsync(ip, 100, ip);
+            }
+            countdown.Signal();
+            countdown.Wait();
+            sw.Stop();
+            TimeSpan span = new TimeSpan(sw.ElapsedTicks);
+            Console.WriteLine("Took {0} milliseconds. {1} hosts active.", sw.ElapsedMilliseconds, upCount);
+            Console.ReadLine();
+        }
+
+        static void p_PingCompleted(object sender, PingCompletedEventArgs e)
+        {
+            string ip = (string)e.UserState;
+            if (e.Reply != null && e.Reply.Status == IPStatus.Success)
+            {
+                if (resolveNames)
+                {
+                    string name;
+                    try
+                    {
+                        IPHostEntry hostEntry = Dns.GetHostEntry(ip);
+                        name = hostEntry.HostName;
+                    }
+                    catch (SocketException ex)
                     {
                         // Проверяем, что это IPv4-адрес
                         if (ipAddress.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
@@ -45,8 +73,7 @@ namespace ScanLocalNetwork
                     Console.WriteLine("=========================================");
                 }
             }
-
-            Console.ReadLine();
+            countdown.Signal();
         }
     }
 }
