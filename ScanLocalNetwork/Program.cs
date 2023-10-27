@@ -19,7 +19,7 @@ namespace ScanLocalNetwork
                 }
             };
             process.Start();
-            await process.StandardInput.WriteLineAsync("arp -a");
+            await process.StandardInput.WriteLineAsync("arp -a && exit");
             var output = await process.StandardOutput.ReadToEndAsync();
             Console.WriteLine(output);
         }
